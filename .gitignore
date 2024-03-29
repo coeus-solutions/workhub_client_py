@@ -1,0 +1,21 @@
+# Bytecode
+__pycache__/
+*.pyc
+
+# Distribution / Packaging
+*.egg-info/
+dist/
+build/
+
+# MyPy
+.mypy_cache/
+
+# IDE (VSCode)
+.vscode/
+
+# Egg files
+*.egg
+
+# Build directories
+bdist.*/
+lib/
