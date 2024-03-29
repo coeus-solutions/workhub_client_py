@@ -92,6 +92,52 @@ class WorkhubClient:
         response.raise_for_status()  # This will throw an error for HTTP error responses
         return response.json()
 
+    def extract_last_json_object(complete_message_str):
+        # Regex pattern to match JSON objects
+        # This pattern assumes that your JSON does not contain strings with unescaped curly braces.
+        # If your JSON objects can contain strings with curly braces, this approach may need refinement.
+        json_objects = re.findall(r'\{.*?\}', complete_message_str, re.DOTALL)
+        
+        if json_objects:
+            last_json_str = json_objects[-1]  # Get the last match
+            try:
+                last_json = json.loads(last_json_str)
+                return last_json
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON: {e}")
+                return None
+        else:
+            print("No JSON objects found.")
+            return None
+        
+    def stream_bot_message(self, conversation_uuid, bot_message_uuid, user_message_uuid):
+        """Poll for bot messages in a conversation with streaming data handling."""
+        url = f'{self.api_base_url}/api/conversations/{conversation_uuid}/bot_message'
+        headers = {'Authorization': f'Bearer {self.token}', 'Content-Type': 'application/json'}
+        data = {
+            'user_message_uuid': user_message_uuid,
+            'bot_message_uuid': bot_message_uuid,
+            'use_json_stream': True,
+        }
+
+        # Note: The 'stream=True' parameter is crucial for handling the response as streamed data.
+        response = requests.post(url, json=data, headers=headers, stream=True)
+
+        try:
+            for line in response.iter_lines():
+                if line:
+                    # Decode each line into text and load as JSON
+                    json_data = json.loads(line.decode('utf-8'))
+                    # Process the JSON object as needed
+                    # For demonstration, we just print it
+                    print(json_data)
+                    # Optionally, yield json_data if you want to make this a generator function
+                    # yield json_data
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON data: {e}")
+        except Exception as e:
+            print(f"An error occurred while polling for bot message: {e}")
+
 
     def poll_for_bot_message(client, conversation_uuid, bot_message_uuid, user_message_uuid):
         url = f'{client.api_base_url}/api/conversations/{conversation_uuid}/bot_message'
@@ -122,54 +168,7 @@ class WorkhubClient:
         complete_message_str = complete_message[-1]  # The large string with multiple JSON objects
         last_json_object = extract_last_json_object(complete_message_str)
         return last_json_object
-
-    def extract_last_json_object(complete_message_str):
-        # Regex pattern to match JSON objects
-        # This pattern assumes that your JSON does not contain strings with unescaped curly braces.
-        # If your JSON objects can contain strings with curly braces, this approach may need refinement.
-        json_objects = re.findall(r'\{.*?\}', complete_message_str, re.DOTALL)
-        
-        if json_objects:
-            last_json_str = json_objects[-1]  # Get the last match
-            try:
-                last_json = json.loads(last_json_str)
-                return last_json
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON: {e}")
-                return None
-        else:
-            print("No JSON objects found.")
-            return None
-        
-        def stream_bot_message(self, conversation_uuid, bot_message_uuid, user_message_uuid):
-            """Poll for bot messages in a conversation with streaming data handling."""
-            url = f'{self.api_base_url}/api/conversations/{conversation_uuid}/bot_message'
-            headers = {'Authorization': f'Bearer {self.token}', 'Content-Type': 'application/json'}
-            data = {
-                'user_message_uuid': user_message_uuid,
-                'bot_message_uuid': bot_message_uuid,
-                'use_json_stream': True,
-            }
-
-            # Note: The 'stream=True' parameter is crucial for handling the response as streamed data.
-            response = requests.post(url, json=data, headers=headers, stream=True)
-
-            try:
-                for line in response.iter_lines():
-                    if line:
-                        # Decode each line into text and load as JSON
-                        json_data = json.loads(line.decode('utf-8'))
-                        # Process the JSON object as needed
-                        # For demonstration, we just print it
-                        print(json_data)
-                        # Optionally, yield json_data if you want to make this a generator function
-                        # yield json_data
-            except json.JSONDecodeError as e:
-                print(f"Error parsing JSON data: {e}")
-            except Exception as e:
-                print(f"An error occurred while polling for bot message: {e}")
-
-
+    
     def send_user_message_and_stream_response(self, conversation_uuid, content, output_mode="MD", document_type='DEFAULT'):
             """
             Send a user message to a specific conversation and stream the bot response.
