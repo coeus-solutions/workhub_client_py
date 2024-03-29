@@ -53,7 +53,19 @@ class WorkhubClient:
         return response.json()
 
     def send_user_message(self, conversation_uuid, content, output_mode="MD", document_type='DEFAULT'):
-        """Send a message to a specific conversation."""
+        """
+        Send a message to a specific conversation.
+        
+        Parameters:
+        - conversation_uuid (str): The UUID of the conversation to send a message to.
+        - content (str): The content of the message.
+        - output_mode (str): The output mode for the message, defaults to "MD" (Markdown).
+        - document_type (str): The type of document or processing to use. Defaults to 'DEFAULT'.
+                                Can be set to 'GPT4' to directly use GPT-4 processing.
+        
+        Returns:
+        - The JSON response from the API call.
+        """
         if not self.token:
             raise Exception('User must be logged in to send a message.')
         url = f'{self.api_base_url}/api/conversations/{conversation_uuid}/user_message'
@@ -66,6 +78,7 @@ class WorkhubClient:
         response = requests.post(url, json=data, headers=headers)
         response.raise_for_status()
         return response.json()
+
 
     
     def create_conversation(self):
